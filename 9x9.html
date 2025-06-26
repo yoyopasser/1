@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>九九乘法練習遊戲</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 380px;
+      width: 100vw;
+      margin: 0 auto;
+      padding: 16px;
+      background: #fff;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    h2 {
+      text-align: center;
+      margin: 0 0 16px 0;
+    }
+    .question {
+      font-size: 2.2em;
+      font-weight: bold;
+      text-align: center;
+      margin: 38px 0 28px;
+    }
+    .options {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 35px;
+    }
+    .options button {
+      font-size: 1.8em;
+      border: 2px solid #333;
+      border-radius: 14px;
+      padding: 12px 28px;
+      background: #f9f9f9;
+      color: #333;
+      min-width: 70px;
+      transition: background 0.2s;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .options button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .result {
+      text-align: center;
+      min-height: 56px;
+      margin-bottom: 10px;
+    }
+    .correct {
+      color: green;
+      font-size: 2.8em;
+      font-weight: bold;
+      letter-spacing: 7px;
+    }
+    .wrong {
+      color: #d00;
+      font-size: 1.5em;
+      font-weight: bold;
+      background: #fff0f0;
+      border-radius: 11px;
+      padding: 10px 30px;
+      border: 2px solid #faa;
+      display: inline-block;
+    }
+    .counters {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      font-size: 1.2em;
+      margin-bottom: 13px;
+    }
+    .counters span {
+      font-weight: bold;
+    }
+    .counters .green { color: green; }
+    .counters .red { color: #d00; }
+    .wrong-list {
+      font-size: 1em;
+      margin-top: 16px;
+    }
+    .wrong-list ul { margin: 0; padding-left: 22px;}
+    .wrong-list li { margin-bottom: 2px;}
+    @media (max-width: 480px) {
+      .container { padding: 6px; }
+      .options button { padding: 10px 10px; font-size: 1.2em; min-width: 40px;}
+      .question { font-size: 1.5em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>九九乘法練習</h2>
+    <div class="question" id="question"></div>
+    <div class="options" id="options"></div>
+    <div class="result" id="result"></div>
+    <div class="counters">
+      <div><span class="green">答對：</span><span id="correctCount">0</span></div>
+      <div><span class="red">答錯：</span><span id="wrongCount">0</span></div>
+    </div>
+    <div class="wrong-list">
+      <b>答錯題目：</b>
+      <ul id="wrongList"><li>（無）</li></ul>
+    </div>
+  </div>
+  <script>
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    function generateQuestion() {
+      const a = getRandomInt(1, 9);
+      const b = getRandomInt(1, 9);
+      const answer = a * b;
+      const wrongSet = new Set();
+      while (wrongSet.size < 2) {
+        let wrong = getRandomInt(1, 9) * getRandomInt(1, 9);
+        if (wrong !== answer) wrongSet.add(wrong);
+      }
+      const options = shuffle([answer, ...Array.from(wrongSet)]);
+      return { a, b, answer, options };
+    }
+
+    let currentQuestion = generateQuestion();
+    let correctCount = 0;
+    let wrongCount = 0;
+    let wrongList = [];
+
+    const questionDiv = document.getElementById("question");
+    const optionsDiv = document.getElementById("options");
+    const resultDiv = document.getElementById("result");
+    const correctCountSpan = document.getElementById("correctCount");
+    const wrongCountSpan = document.getElementById("wrongCount");
+    const wrongListUl = document.getElementById("wrongList");
+
+    function renderQuestion() {
+      questionDiv.textContent = `${currentQuestion.a} × ${currentQuestion.b} = ?`;
+      optionsDiv.innerHTML = "";
+      currentQuestion.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.onclick = () => handleAnswer(opt);
+        btn.disabled = false;
+        optionsDiv.appendChild(btn);
+      });
+      resultDiv.innerHTML = "";
+    }
+
+    function handleAnswer(opt) {
+      Array.from(optionsDiv.children).forEach(btn => btn.disabled = true);
+      if (opt === currentQuestion.answer) {
+        resultDiv.innerHTML = '<span class="correct">Ｏ</span>';
+        correctCount++;
+        correctCountSpan.textContent = correctCount;
+        setTimeout(() => {
+          currentQuestion = generateQuestion();
+          renderQuestion();
+        }, 800);
+      } else {
+        resultDiv.innerHTML = `<span class="wrong">正確答案：${currentQuestion.answer}</span>`;
+        wrongCount++;
+        wrongCountSpan.textContent = wrongCount;
+        wrongList.push({
+          a: currentQuestion.a,
+          b: currentQuestion.b,
+          answer: currentQuestion.answer
+        });
+        updateWrongList();
+        setTimeout(() => {
+          currentQuestion = generateQuestion();
+          renderQuestion();
+        }, 1800);
+      }
+    }
+
+    function updateWrongList() {
+      wrongListUl.innerHTML = "";
+      if (wrongList.length === 0) {
+        wrongListUl.innerHTML = "<li>（無）</li>";
+      } else {
+        wrongList.forEach(item => {
+          const li = document.createElement("li");
+          li.textContent = `${item.a} × ${item.b} = ${item.answer}`;
+          wrongListUl.appendChild(li);
+        });
+      }
+    }
+
+    renderQuestion();
+  </script>
+</body>
+</html>
